@@ -3,12 +3,12 @@
 pkgname="pacman-auto-update"
 install="recipes.sh"
 
-pkgdesc="Keeps all precompiled software updated"
-url="https://github.com/cmuench/pacman-auto-update"
+pkgdesc="Keeps all precompiled and AUR software updated"
+url="https://github.com/Imdabossou/pacman-auto-update"
 license=("GPL2")
 
 # set pkgver with: date +%s
-pkgver=1785772580
+pkgver=1792795094
 pkgrel=1
 arch=("any")
 
@@ -20,10 +20,17 @@ backup=("usr/lib/systemd/system/pacman-auto-update.timer")
 depends=(
 	libnotify
 	pacman-contrib
+	sudo
 	systemd
+)
+
+optdepends=(
+	"yay: also update AUR packages"
 )
 
 
 package() {
 	cp --recursive "${srcdir}/${pkgname}/root"/* "${pkgdir}"
+	chmod 0750 "${pkgdir}/etc/sudoers.d"
+	chmod 0440 "${pkgdir}/etc/sudoers.d/pacman-auto-update"
 }

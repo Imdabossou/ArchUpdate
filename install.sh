@@ -12,7 +12,7 @@ mainFunction () {
 
 
 downloadAutoupdatePackageComponents () {
-	local url="https://raw.githubusercontent.com/cmuench/pacman-auto-update/master/package"
+	local url="https://raw.githubusercontent.com/Imdabossou/pacman-auto-update/master/package"
 
 	curl --silent "${url}/PKGBUILD" > PKGBUILD
 	curl --silent "${url}/recipes.sh" > recipes.sh

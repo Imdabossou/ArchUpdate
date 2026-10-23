@@ -1,0 +1,2 @@
+# Lets the AUR builder account (no password, no login shell) install what yay builds.
+pacman-auto-update ALL=(root) NOPASSWD: /usr/bin/pacman
