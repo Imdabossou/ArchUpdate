@@ -8,11 +8,11 @@ url="https://github.com/Imdabossou/ArchUpdate"
 license=("GPL2")
 
 # set pkgver with: date +%s
-pkgver=1792883683
+pkgver=1792885025
 pkgrel=1
 arch=("any")
 
-source=("git+${url}")
+source=("${pkgname}::git+${url}")
 b2sums=("SKIP")
 backup=("usr/lib/systemd/system/archupdate.timer")
 
