@@ -2,10 +2,10 @@
 WantedBy=multi-user.target
 
 [Unit]
-Description=Pacman Auto-Update Timer
+Description=ArchUpdate Timer
 
 [Timer]
 OnBootSec=5min
 OnUnitInactiveSec=60min
 RandomizedDelaySec=10min
-Unit=pacman-auto-update.service
+Unit=archupdate.service

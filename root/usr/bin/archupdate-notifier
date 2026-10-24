@@ -619,7 +619,7 @@ mainFunction () {
 
 errorsAreLogged () {
 	#shellcheck disable=SC2143
-	[[ -n "$(LANG="C.utf8" journalctl --boot=-1 --unit=pacman-auto-update.service --priority=err 2>/dev/null | grep --invert-match '^--')" ]]
+	[[ -n "$(LANG="C.utf8" journalctl --boot=-1 --unit=archupdate.service --priority=err 2>/dev/null | grep --invert-match '^--')" ]]
 }
 
 
@@ -655,7 +655,7 @@ translation () {
 
 
 timerIsEnabled () {
-	systemctl is-enabled --quiet pacman-auto-update.timer
+	systemctl is-enabled --quiet archupdate.timer
 }
 
 

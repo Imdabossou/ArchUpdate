@@ -3,9 +3,9 @@ WantedBy=graphical-session.target
 
 [Unit]
 After=graphical-session.target
-Description=Pacman Auto-Update Notifier
+Description=ArchUpdate Notifier
 
 [Service]
 Type=oneshot
 Nice=19
-ExecStart=/usr/bin/pacman-auto-update-notifier
+ExecStart=/usr/bin/archupdate-notifier

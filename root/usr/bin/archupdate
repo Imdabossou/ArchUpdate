@@ -10,13 +10,13 @@ forcedUpdate=
 LANG="C.utf8"
 databaseLock="/var/lib/pacman/db.lck"
 keyringsLock="/var/lib/pacman/keys.lck"
-aurUser="pacman-auto-update"
+aurUser="archupdate"
 
 
 mainFunction () {
 	if updatingIsFavorable && updatingIsNeeded; then
-		if updatingAutoupdateIsNeeded; then
-			updateAutoupdate
+		if updatingArchupdateIsNeeded; then
+			updateArchupdate
 		fi
 
 		updateKeyrings
@@ -41,25 +41,25 @@ aurIsUsable () {
 }
 
 
-autoupdateIsOutdated () {
-	local repoEpoch; repoEpoch="$(autoupdateRepoEpoch)"
-	local localEpoch; localEpoch="$(autoupdateLocalEpoch)"
+archupdateIsOutdated () {
+	local repoEpoch; repoEpoch="$(archupdateRepoEpoch)"
+	local localEpoch; localEpoch="$(archupdateLocalEpoch)"
 
 	! [[ "${localEpoch}" =~ : ]] &&
 	[[ "${repoEpoch}" -gt "${localEpoch}" ]]
 }
 
 
-autoupdateLocalEpoch () {
-	pacman --query --info pacman-auto-update |
+archupdateLocalEpoch () {
+	pacman --query --info archupdate |
 	grep "Version" |
 	cut --delimiter=' ' --fields=11 |
 	cut --delimiter='-' --fields=1
 }
 
 
-autoupdateRepoEpoch () {
-	curl --silent "https://raw.githubusercontent.com/Imdabossou/pacman-auto-update/master/package/PKGBUILD" |
+archupdateRepoEpoch () {
+	curl --silent "https://raw.githubusercontent.com/Imdabossou/ArchUpdate/master/package/PKGBUILD" |
 	grep "pkgver=" |
 	cut --delimiter='=' --fields=2
 }
@@ -101,8 +101,8 @@ deferInterruption () {
 }
 
 
-downloadAutoupdatePackageComponents () {
-	local url="https://raw.githubusercontent.com/Imdabossou/pacman-auto-update/master/package"
+downloadArchupdatePackageComponents () {
+	local url="https://raw.githubusercontent.com/Imdabossou/ArchUpdate/master/package"
 
 	curl --silent "${url}/PKGBUILD" > PKGBUILD
 	curl --silent "${url}/recipes.sh" > recipes.sh
@@ -116,8 +116,8 @@ downloadPackage () {
 }
 
 
-enterAutoupdateBuildDir () {
-	local dir="/tmp/pacman-auto-update"
+enterArchupdateBuildDir () {
+	local dir="/tmp/archupdate"
 
 	so rm --recursive --force "${dir}"
 	so mkdir --parents "${dir}"
@@ -160,7 +160,7 @@ keyrings () {
 
 
 makePackage () {
-	export PACKAGER="autoupdate <@${HOSTNAME}>"
+	export PACKAGER="archupdate <@${HOSTNAME}>"
 	so commandAsUser nobody makepkg --syncdeps --needed --rmdeps --force --noconfirm
 }
 
@@ -287,9 +287,9 @@ terminateChildren () {
 }
 
 
-updateAutoupdate () {
-	enterAutoupdateBuildDir
-	downloadAutoupdatePackageComponents
+updateArchupdate () {
+	enterArchupdateBuildDir
+	downloadArchupdatePackageComponents
 	makePackage
 	waitFor updatePackagesHere
 	removeCurrentDir
@@ -347,8 +347,8 @@ updateSystem () {
 }
 
 
-updatingAutoupdateIsNeeded () {
-	autoupdateIsOutdated || [[ -n "${forcedUpdate}" ]]
+updatingArchupdateIsNeeded () {
+	archupdateIsOutdated || [[ -n "${forcedUpdate}" ]]
 }
 
 

@@ -3,10 +3,10 @@ WantedBy=multi-user.target
 
 [Unit]
 After=network-online.target
-Description=Pacman Auto-Update
+Description=ArchUpdate
 
 [Service]
 Nice=19
 KillMode=process
 SendSIGKILL=no
-ExecStart=/usr/bin/pacman-auto-update
+ExecStart=/usr/bin/archupdate

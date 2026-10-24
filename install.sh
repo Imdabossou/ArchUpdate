@@ -3,24 +3,24 @@ set -e
 
 
 mainFunction () {
-	enterAutoupdateBuildDir
-	downloadAutoupdatePackageComponents
+	enterArchupdateBuildDir
+	downloadArchupdatePackageComponents
 	makePackage
 	updatePackagesHere
 	removeCurrentDir
 }
 
 
-downloadAutoupdatePackageComponents () {
-	local url="https://raw.githubusercontent.com/Imdabossou/pacman-auto-update/master/package"
+downloadArchupdatePackageComponents () {
+	local url="https://raw.githubusercontent.com/Imdabossou/ArchUpdate/master/package"
 
 	curl --silent "${url}/PKGBUILD" > PKGBUILD
 	curl --silent "${url}/recipes.sh" > recipes.sh
 }
 
 
-enterAutoupdateBuildDir () {
-	local dir="/tmp/pacman-auto-update"
+enterArchupdateBuildDir () {
+	local dir="/tmp/archupdate"
 
 	so sudo rm --recursive --force "${dir}"
 	so mkdir --parents "${dir}"

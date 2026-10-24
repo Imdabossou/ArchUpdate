@@ -1,60 +1,77 @@
-# Pacman Auto Update
+# ArchUpdate
 
-Keeps all precompiled software packages updated, without user intervention.
+Keeps your Arch Linux system updated in the background: repository packages through pacman, and AUR packages through yay. You don't have to do anything.
 
-Updates are automatically **postponed** under unfavorable conditions:
-- 🔋 The **battery** has less than 90% of charge.
-- 💸 networkmanager is installed, and the **connection** is guessed as metered.
-- 🔒 The package database has a **lock** younger than a day, and older than boot time. Otherwise the lock is automatically removed.
 
-Orphaned packages are **not** removed automatically (upstream did this, and a quoting bug made it run package names as root commands). Old cached packages are still pruned with `paccache`.
+## What it does
 
-If auto-updating **fails**, a desktop notification appears during login.
+Every hour, ArchUpdate:
+
+1. Refreshes the keyrings so signature checks keep working.
+2. Downloads and installs all repository updates (`pacman -Syu`).
+3. Updates AUR packages with yay, if yay is installed.
+4. Prunes the package cache with `paccache`, keeping the last two versions of each installed package and none of uninstalled ones.
+5. Updates itself when a newer version is pushed to this repository.
+
+Updates **wait** when conditions aren't good:
+- 🔋 The **battery** is below 90%.
+- 💸 NetworkManager is installed and the **connection** looks metered.
+- 🔒 The package database has a **lock** from this boot that is less than a day old. A stale lock is removed automatically.
+
+If an update **fails**, a desktop notification appears when you next log in.
+
+Orphaned packages are **never** removed automatically. You decide what to uninstall.
 
 
 ## AUR packages
 
-If **yay** is installed, AUR packages are updated too, right after the repository packages (`yay -Sua`).
+yay won't run as root, so AUR builds run as a dedicated system account, `archupdate`. It has no password, no login shell, and its home is `/var/lib/archupdate`. A sudoers rule in `/etc/sudoers.d/archupdate` lets only that account run `pacman` without a password, so yay can install what it built.
 
-yay refuses to run as root, so the builds run as a dedicated system account, `pacman-auto-update` (no password, no login shell, home in `/var/lib/pacman-auto-update`). A sudoers rule in `/etc/sudoers.d/pacman-auto-update` lets only that account run `pacman` without a password, so yay can install what it built.
+Prompts are answered automatically: no clean builds, no diff or PKGBUILD review, and make dependencies are removed afterwards. Development (`-git`) packages are rebuilt only when their AUR version changes.
 
-Prompts are answered automatically: no clean builds, no diff or PKGBUILD review, make dependencies removed afterwards. Development (`-git`) packages are only rebuilt when their version in the AUR changes.
-
-⚠️ This means AUR PKGBUILDs are built and installed **without anyone reviewing them**. Only use it if you trust the AUR packages you have installed.
+⚠️ This means AUR PKGBUILDs are built and installed **without anyone reviewing them**. Only use this if you trust the AUR packages you have installed.
 
 
 ## Installing
 
-In the application **Terminal** enter:
+In a terminal, run:
 
 ```sh
-curl --silent https://raw.githubusercontent.com/Imdabossou/pacman-auto-update/master/install.sh | bash
+curl --silent https://raw.githubusercontent.com/Imdabossou/ArchUpdate/master/install.sh | bash
 ```
 
-After that the software will be **automatically enabled**, and also it will automatically build and upgrade its **own package**.
-
-Having this program in the **AUR** is not possible right now, simply because its moderators disagree with having any kind of method for automatically upgrading the system.
+This builds and installs the `archupdate` package, then turns on the timer and the login notifier.
 
 
-## Editing update frequency
+## Changing how often it runs
 
-By default it updates **hourly**.
+By default it runs **hourly**. To change that, edit the timer:
 
-**Edit** with:
 ```sh
-sudo rnano /usr/lib/systemd/system/pacman-auto-update.timer
+sudo rnano /usr/lib/systemd/system/archupdate.timer
 ```
 
 
-## Inspecting status
+## Checking status
 
-Of the **service**:
+The **service**:
 ```sh
-systemctl status pacman-auto-update
+systemctl status archupdate
 ```
 
-Of the **timer**:
+The **timer**:
 ```sh
-systemctl list-timers pacman-auto-update
+systemctl list-timers archupdate
 ```
 
+The **log**:
+```sh
+journalctl -u archupdate
+```
+
+
+## Credits
+
+ArchUpdate is a renamed and extended fork of [pacman-auto-update](https://github.com/cmuench/pacman-auto-update) by Christian Münch, Alberto Salvia Novella, Nico Tonnhofer and its other contributors. The original handles repository updates, the update conditions, keyring refreshes and the failure notifier. ArchUpdate adds AUR updates through yay and stops removing orphaned packages.
+
+It is licensed under the GPL-2.0, like the original. See [LICENSE](LICENSE).

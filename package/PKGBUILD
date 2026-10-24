@@ -1,20 +1,20 @@
 #! /bin/bash
 
-pkgname="pacman-auto-update"
+pkgname="archupdate"
 install="recipes.sh"
 
 pkgdesc="Keeps all precompiled and AUR software updated"
-url="https://github.com/Imdabossou/pacman-auto-update"
+url="https://github.com/Imdabossou/ArchUpdate"
 license=("GPL2")
 
 # set pkgver with: date +%s
-pkgver=1792795376
+pkgver=1792883683
 pkgrel=1
 arch=("any")
 
 source=("git+${url}")
 b2sums=("SKIP")
-backup=("usr/lib/systemd/system/pacman-auto-update.timer")
+backup=("usr/lib/systemd/system/archupdate.timer")
 
 
 depends=(
@@ -32,5 +32,5 @@ optdepends=(
 package() {
 	cp --recursive "${srcdir}/${pkgname}/root"/* "${pkgdir}"
 	chmod 0750 "${pkgdir}/etc/sudoers.d"
-	chmod 0440 "${pkgdir}/etc/sudoers.d/pacman-auto-update"
+	chmod 0440 "${pkgdir}/etc/sudoers.d/archupdate"
 }
