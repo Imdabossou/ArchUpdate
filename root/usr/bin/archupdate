@@ -59,7 +59,7 @@ archupdateLocalEpoch () {
 
 
 archupdateRepoEpoch () {
-	curl --silent "https://raw.githubusercontent.com/Imdabossou/ArchUpdate/master/package/PKGBUILD" |
+	curl --silent "https://raw.githubusercontent.com/Imdabossou/ArchUpdate/main/package/PKGBUILD" |
 	grep "pkgver=" |
 	cut --delimiter='=' --fields=2
 }
@@ -102,7 +102,7 @@ deferInterruption () {
 
 
 downloadArchupdatePackageComponents () {
-	local url="https://raw.githubusercontent.com/Imdabossou/ArchUpdate/master/package"
+	local url="https://raw.githubusercontent.com/Imdabossou/ArchUpdate/main/package"
 
 	curl --silent "${url}/PKGBUILD" > PKGBUILD
 	curl --silent "${url}/recipes.sh" > recipes.sh

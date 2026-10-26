@@ -12,7 +12,7 @@ mainFunction () {
 
 
 downloadArchupdatePackageComponents () {
-	local url="https://raw.githubusercontent.com/Imdabossou/ArchUpdate/master/package"
+	local url="https://raw.githubusercontent.com/Imdabossou/ArchUpdate/main/package"
 
 	curl --silent "${url}/PKGBUILD" > PKGBUILD
 	curl --silent "${url}/recipes.sh" > recipes.sh

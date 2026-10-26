@@ -37,7 +37,7 @@ Prompts are answered automatically: no clean builds, no diff or PKGBUILD review,
 In a terminal, run:
 
 ```sh
-curl --silent https://raw.githubusercontent.com/Imdabossou/ArchUpdate/master/install.sh | bash
+curl --silent https://raw.githubusercontent.com/Imdabossou/ArchUpdate/main/install.sh | bash
 ```
 
 This builds and installs the `archupdate` package, then turns on the timer and the login notifier.
