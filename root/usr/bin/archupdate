@@ -66,9 +66,21 @@ archupdateRepoEpoch () {
 
 
 batteryIsCharged () {
-	local capacity="/sys/class/power_supply/BAT1/capacity"
+	# Every system battery (BAT0, BAT1, ...) must be at 90% or more.
+	# Batteries with scope "Device" belong to mice, headsets and the like, so they don't count.
+	local supply capacity
 
-	[[ ! -f "${capacity}" || "$(cat "${capacity}")" -ge 90 ]]
+	for supply in /sys/class/power_supply/*; do
+		[[ "$(cat "${supply}/type" 2>/dev/null)" == "Battery" ]] || continue
+		[[ "$(cat "${supply}/scope" 2>/dev/null)" == "Device" ]] && continue
+
+		capacity="$(cat "${supply}/capacity" 2>/dev/null)"
+		[[ "${capacity}" =~ ^[0-9]+$ ]] || continue
+
+		if [[ "${capacity}" -lt 90 ]]; then
+			return 1
+		fi
+	done
 }
 
 
