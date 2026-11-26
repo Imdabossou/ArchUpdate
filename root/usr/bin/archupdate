@@ -6,23 +6,37 @@ enable sleep
 verbose=
 forcedUpdate=
 
+# Desktop notifications while updating (either "x" or empty):
+notifications=x
+
 # Other:
 LANG="C.utf8"
 databaseLock="/var/lib/pacman/db.lck"
 keyringsLock="/var/lib/pacman/keys.lck"
 aurUser="archupdate"
+declare -A notificationIds=()
+updateStarted=false
+updateFinished=false
+systemPackages=()
+aurPackages=()
 
 
 mainFunction () {
 	if updatingIsFavorable && updatingIsNeeded; then
+		startUpdateSession
+
 		if updatingArchupdateIsNeeded; then
+			notifyProgress "Updating ArchUpdate itself" 2
 			updateArchupdate
 		fi
 
+		notifyProgress "Checking signing keys" 5
 		updateKeyrings
 		updateSystem
 		updateAur
 		waitFor pruneOldPackages
+
+		finishUpdateSession
 	fi
 
 	terminateChildren
@@ -81,6 +95,159 @@ batteryIsCharged () {
 			return 1
 		fi
 	done
+}
+
+
+blockShutdown () {
+	# Holds a logind inhibitor until this script exits, so shutting down
+	# or suspending mid-install is refused. "tail --pid" ends with us, even
+	# if we are killed, so the block can never outlive the update.
+	command -v systemd-inhibit &> /dev/null || return 0
+
+	systemd-inhibit --what=shutdown:sleep --mode=block \
+		--who="ArchUpdate" --why="Installing system updates" \
+		tail --pid=$$ --follow /dev/null &> /dev/null &
+	disown
+}
+
+
+desktopUsers () {
+	# UIDs that have a graphical session (Wayland or X11) right now.
+	local session type uid line
+
+	while read -r session _; do
+		type=""; uid=""
+		while IFS='=' read -r key line; do
+			case "${key}" in
+				Type) type="${line}" ;;
+				User) uid="${line}" ;;
+			esac
+		done < <(loginctl show-session "${session}" --property=Type --property=User 2>/dev/null)
+
+		if [[ "${type}" == "wayland" || "${type}" == "x11" ]] && [[ "${uid}" =~ ^[0-9]+$ ]]; then
+			echo "${uid}"
+		fi
+	done < <(loginctl list-sessions --no-legend 2>/dev/null) | sort --unique
+}
+
+
+desktopNotify () {
+	# desktopNotify <urgency> <timeout ms> <title> <body> [progress 0-100]
+	# Replaces this run's earlier notification, so there's only ever one.
+	# Never fails: a missing notification must not stop an update.
+	[[ -n "${notifications}" ]] || return 0
+	command -v notify-send &> /dev/null || return 0
+
+	local urgency="${1}" timeout="${2}" title="${3}" body="${4}" progress="${5}"
+	local uid user id args
+
+	for uid in $(desktopUsers); do
+		[[ -S "/run/user/${uid}/bus" ]] || continue
+		user="$(id --name --user "${uid}" 2>/dev/null)" || continue
+
+		args=(--app-name="ArchUpdate" --icon="system-software-update"
+			--urgency="${urgency}" --expire-time="${timeout}" --print-id)
+		[[ -n "${notificationIds[${uid}]}" ]] && args+=(--replace-id="${notificationIds[${uid}]}")
+		[[ -n "${progress}" ]] && args+=(--hint="int:value:${progress}")
+
+		id="$(timeout 10 runuser --user="${user}" -- \
+			env DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${uid}/bus" \
+			notify-send "${args[@]}" -- "${title}" "${body}" 2>/dev/null)" || continue
+
+		[[ "${id}" =~ ^[0-9]+$ ]] && notificationIds[${uid}]="${id}"
+	done
+
+	return 0
+}
+
+
+finishUpdateSession () {
+	updateFinished=true
+
+	local count=$(( ${#systemPackages[@]} + ${#aurPackages[@]} ))
+	local body; body="$(packageSummary "${systemPackages[@]}" "${aurPackages[@]}")"
+
+	if restartIsRecommended "${systemPackages[@]}"; then
+		body+=$'\n'"Restart when convenient to use the new core system parts."
+	fi
+
+	desktopNotify normal 30000 "${count} updates installed" "${body}" 100
+}
+
+
+notifyFailure () {
+	local status="${1}"
+
+	if ! "${updateStarted}" || "${updateFinished}"; then
+		return 0
+	elif [[ "${status}" -eq 0 ]]; then
+		# waitFor stops cleanly when the battery runs low.
+		desktopNotify normal 30000 "Update paused" \
+			"The battery is low. The rest installs on a later run."
+	else
+		desktopNotify critical 0 "Update stopped before finishing" \
+			"Exit code ${status}. Details: journalctl -u archupdate"
+	fi
+}
+
+
+notifyProgress () {
+	local step="${1}"
+	local progress="${2}"
+	local count=$(( ${#systemPackages[@]} + ${#aurPackages[@]} ))
+
+	desktopNotify normal 0 "Updating ${count} packages: don't shut down" \
+		"${step}..."$'\n'"$(packageSummary "${systemPackages[@]}" "${aurPackages[@]}")" \
+		"${progress}"
+}
+
+
+packageSummary () {
+	# "a, b, c, d, e and 9 more".
+	local packages=("${@}")
+	local shown=5
+	local text
+
+	if [[ "${#packages[@]}" -eq 0 ]]; then
+		echo "No package list available"
+		return
+	fi
+
+	text="$(IFS=','; echo "${packages[*]:0:${shown}}" | sed 's/,/, /g')"
+
+	if [[ "${#packages[@]}" -gt "${shown}" ]]; then
+		text+=" and $(( ${#packages[@]} - shown )) more"
+	fi
+
+	echo "${text}"
+}
+
+
+restartIsRecommended () {
+	local package
+
+	for package in "${@}"; do
+		if [[ "${package}" =~ ^(linux(-lts|-zen|-hardened|-rt)?|systemd|glibc|mesa|nvidia.*|amd-ucode|intel-ucode|linux-firmware.*)$ ]]; then
+			return 0
+		fi
+	done
+
+	return 1
+}
+
+
+startUpdateSession () {
+	updateStarted=true
+	trap 'notifyFailure "${?}"' EXIT
+
+	readarray -t systemPackages < <(pacman --query --upgrades --quiet 2>/dev/null)
+
+	if aurIsUsable; then
+		readarray -t aurPackages < <(commandAsUser "${aurUser}" yay --query --upgrades --aur --quiet 2>/dev/null)
+	fi
+
+	blockShutdown
+	notifyProgress "Starting" 0
 }
 
 
@@ -310,6 +477,7 @@ updateArchupdate () {
 
 updateAur () {
 	if aurIsOutdated; then
+		notifyProgress "Building and installing AUR packages" 70
 		waitFor installAurUpdates
 	fi
 }
@@ -354,7 +522,9 @@ updatePackagesHere () {
 
 
 updateSystem () {
+	notifyProgress "Downloading" 10
 	installUpdates "--downloadonly"
+	notifyProgress "Installing" 35
 	waitFor installUpdates
 }
 
