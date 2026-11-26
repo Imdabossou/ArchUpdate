@@ -8,7 +8,7 @@ Every hour, ArchUpdate installs repository updates with pacman and AUR updates w
 
 - **Hourly updates** from the repositories, and from the AUR if yay is installed
 - **Waits when it should**: on low battery, on a metered connection, or while another package manager is running
-- **Shows when it's working**: a desktop notification (KDE Plasma, GNOME and others) lists what's being updated and its progress, then what was installed and whether a restart is worth doing
+- **Shows when it's working**: a desktop notification (KDE Plasma, GNOME and others) lists what's being updated and the current step, then what was installed and whether a restart is worth doing
 - **Blocks shutdown and sleep while installing**, so you can't switch off halfway through an update
 - **Tells you if something fails**, straight away and again at your next login
 - **Keeps the cache tidy**: the last two versions of each package, none of uninstalled ones

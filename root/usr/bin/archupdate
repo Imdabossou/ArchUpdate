@@ -26,11 +26,11 @@ mainFunction () {
 		startUpdateSession
 
 		if updatingArchupdateIsNeeded; then
-			notifyProgress "Updating ArchUpdate itself" 2
+			notifyProgress "Updating ArchUpdate itself"
 			updateArchupdate
 		fi
 
-		notifyProgress "Checking signing keys" 5
+		notifyProgress "Checking signing keys"
 		updateKeyrings
 		updateSystem
 		updateAur
@@ -132,13 +132,13 @@ desktopUsers () {
 
 
 desktopNotify () {
-	# desktopNotify <urgency> <timeout ms> <title> <body> [progress 0-100]
+	# desktopNotify <urgency> <timeout ms> <title> <body>
 	# Replaces this run's earlier notification, so there's only ever one.
 	# Never fails: a missing notification must not stop an update.
 	[[ -n "${notifications}" ]] || return 0
 	command -v notify-send &> /dev/null || return 0
 
-	local urgency="${1}" timeout="${2}" title="${3}" body="${4}" progress="${5}"
+	local urgency="${1}" timeout="${2}" title="${3}" body="${4}"
 	local uid user id args
 
 	for uid in $(desktopUsers); do
@@ -148,7 +148,6 @@ desktopNotify () {
 		args=(--app-name="ArchUpdate" --icon="system-software-update"
 			--urgency="${urgency}" --expire-time="${timeout}" --print-id)
 		[[ -n "${notificationIds[${uid}]}" ]] && args+=(--replace-id="${notificationIds[${uid}]}")
-		[[ -n "${progress}" ]] && args+=(--hint="int:value:${progress}")
 
 		id="$(timeout 10 runuser --user="${user}" -- \
 			env DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${uid}/bus" \
@@ -171,7 +170,7 @@ finishUpdateSession () {
 		body+=$'\n'"Restart when convenient to use the new core system parts."
 	fi
 
-	desktopNotify normal 30000 "${count} updates installed" "${body}" 100
+	desktopNotify normal 30000 "$(plural "${count}" update) installed" "${body}"
 }
 
 
@@ -193,12 +192,16 @@ notifyFailure () {
 
 notifyProgress () {
 	local step="${1}"
-	local progress="${2}"
 	local count=$(( ${#systemPackages[@]} + ${#aurPackages[@]} ))
 
-	desktopNotify normal 0 "Updating ${count} packages: don't shut down" \
-		"${step}..."$'\n'"$(packageSummary "${systemPackages[@]}" "${aurPackages[@]}")" \
-		"${progress}"
+	desktopNotify normal 0 "Updating $(plural "${count}" package): don't shut down" \
+		"${step}..."$'\n'"$(packageSummary "${systemPackages[@]}" "${aurPackages[@]}")"
+}
+
+
+plural () {
+	# "1 package", "3 packages"
+	if [[ "${1}" -eq 1 ]]; then echo "1 ${2}"; else echo "${1} ${2}s"; fi
 }
 
 
@@ -247,7 +250,7 @@ startUpdateSession () {
 	fi
 
 	blockShutdown
-	notifyProgress "Starting" 0
+	notifyProgress "Starting"
 }
 
 
@@ -477,7 +480,7 @@ updateArchupdate () {
 
 updateAur () {
 	if aurIsOutdated; then
-		notifyProgress "Building and installing AUR packages" 70
+		notifyProgress "Building and installing AUR packages"
 		waitFor installAurUpdates
 	fi
 }
@@ -522,9 +525,9 @@ updatePackagesHere () {
 
 
 updateSystem () {
-	notifyProgress "Downloading" 10
+	notifyProgress "Downloading"
 	installUpdates "--downloadonly"
-	notifyProgress "Installing" 35
+	notifyProgress "Installing"
 	waitFor installUpdates
 }
 
